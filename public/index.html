@@ -34,10 +34,10 @@
   .hdr p{font-size:12px;color:var(--text2);margin-top:3px}
 
   /* State bar */
-  #state-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:.85rem;min-height:20px}
-  .spinner{width:14px;height:14px;border:2px solid var(--bd2);border-top-color:var(--itx);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+  #state-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:.85rem;min-height:20px;max-height:24px;overflow:hidden}
+  .spinner{width:14px;height:14px;min-width:14px;border:2px solid var(--bd2);border-top-color:var(--itx);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .state-ok svg,.state-err svg{width:14px;height:14px;flex-shrink:0}
+  #state-bar svg{width:14px;height:14px;min-width:14px;max-width:14px;flex-shrink:0;display:inline-block}
   .last-fetch{font-size:10px;color:var(--text3);margin-left:auto}
   .refresh-btn{font-size:11px;padding:2px 8px;border:0.5px solid var(--bd2);border-radius:var(--r);cursor:pointer;background:transparent;color:var(--text2);transition:opacity .13s}
   .refresh-btn:hover{opacity:.7}
@@ -241,8 +241,8 @@ function setStatus(type, msg) {
   const bar = document.getElementById('state-bar');
   const icons = {
     loading: '<div class="spinner"></div>',
-    ok:  '<svg viewBox="0 0 14 14" fill="none" class="state-ok"><circle cx="7" cy="7" r="6" stroke="var(--hi)" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="var(--hi)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    err: '<svg viewBox="0 0 14 14" fill="none" class="state-err"><circle cx="7" cy="7" r="6" stroke="var(--lo)" stroke-width="1.5"/><path d="M7 4v3M7 9.5v.5" stroke="var(--lo)" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    ok:  '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="var(--hi)" stroke-width="1.5"/><path d="M4 7l2 2 4-4" stroke="var(--hi)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    err: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="var(--lo)" stroke-width="1.5"/><path d="M7 4v3M7 9.5v.5" stroke="var(--lo)" stroke-width="1.5" stroke-linecap="round"/></svg>',
   };
   const refreshBtn = type !== 'loading'
     ? `<button class="refresh-btn" onclick="loadData()">↻ Refresh</button>` : '';

@@ -197,24 +197,32 @@ function buildPlanSlots(beds, baths) {
 const DIM_GROUPS = [
   { label:'Master',        keys:['mb','mbath','mbShower'] },
   { label:'Bed / Bath 2',  keys:['bed2','bath2','bath2Shower'] },
+  { label:'Bed / Bath 3',  keys:['bed3','bath3','bath3Shower'] },
+  { label:'Bed / Bath 4',  keys:['bed4','bath4','bath4Shower'] },
   { label:'Living spaces', keys:['living','dining','kitchen','balcony'] },
 ];
 const DIM_ROOMS = [
-  { key:'mb',          label:'Master bed', isSub:false, minBaths:0 },
-  { key:'mbath',       label:'Master bath',isSub:false, minBaths:0 },
-  { key:'mbShower',    label:'↳ Shower 1', isSub:true,  minBaths:0 },
-  { key:'bed2',        label:'Bedroom 2',  isSub:false, minBaths:0 },
-  { key:'bath2',       label:'Bath 2',     isSub:false, minBaths:2 },
-  { key:'bath2Shower', label:'↳ Shower 2', isSub:true,  minBaths:2 },
-  { key:'living',      label:'Living',     isSub:false, minBaths:0 },
-  { key:'dining',      label:'Dining',     isSub:false, minBaths:0 },
-  { key:'kitchen',     label:'Kitchen',    isSub:false, minBaths:0 },
-  { key:'balcony',     label:'Balcony',    isSub:false, minBaths:0 },
+  { key:'mb',          label:'Master bed', isSub:false, minBeds:0, minBaths:0 },
+  { key:'mbath',       label:'Master bath',isSub:false, minBeds:0, minBaths:0 },
+  { key:'mbShower',    label:'↳ Shower 1', isSub:true,  minBeds:0, minBaths:0 },
+  { key:'bed2',        label:'Bedroom 2',  isSub:false, minBeds:2, minBaths:0 },
+  { key:'bath2',       label:'Bath 2',     isSub:false, minBeds:0, minBaths:2 },
+  { key:'bath2Shower', label:'↳ Shower 2', isSub:true,  minBeds:0, minBaths:2 },
+  { key:'bed3',        label:'Bedroom 3',  isSub:false, minBeds:3, minBaths:0 },
+  { key:'bath3',       label:'Bath 3',     isSub:false, minBeds:0, minBaths:3 },
+  { key:'bath3Shower', label:'↳ Shower 3', isSub:true,  minBeds:0, minBaths:3 },
+  { key:'bed4',        label:'Bedroom 4',  isSub:false, minBeds:4, minBaths:0 },
+  { key:'bath4',       label:'Bath 4',     isSub:false, minBeds:0, minBaths:4 },
+  { key:'bath4Shower', label:'↳ Shower 4', isSub:true,  minBeds:0, minBaths:4 },
+  { key:'living',      label:'Living',     isSub:false, minBeds:0, minBaths:0 },
+  { key:'dining',      label:'Dining',     isSub:false, minBeds:0, minBaths:0 },
+  { key:'kitchen',     label:'Kitchen',    isSub:false, minBeds:0, minBaths:0 },
+  { key:'balcony',     label:'Balcony',    isSub:false, minBeds:0, minBaths:0 },
 ];
 
 // ─── State ─────────────────────────────────────────────────────────────────
 let DATA = [];
-let activeDims = new Set(['mb','mbath','mbShower','bed2','bath2','bath2Shower','living','dining','kitchen','balcony']);
+let activeDims = new Set(['mb','mbath','mbShower','bed2','bath2','bath2Shower','bed3','bath3','bath3Shower','bed4','bath4','bath4Shower','living','dining','kitchen','balcony']);
 let fBand='all', fRooms='all', fStat='all', fQ='';
 let mRow=null, mSlotKey=null;
 
@@ -285,12 +293,18 @@ function togDim(key) {
     const nonSub = [...activeDims].filter(k => !DIM_ROOMS.find(r => r.key===k).isSub);
     if (nonSub.length <= 1 && !r.isSub) return;
     activeDims.delete(key);
-    if (key === 'bath2') activeDims.delete('bath2Shower');
-    if (key === 'mbath') activeDims.delete('mbShower');
+    // when a bath is toggled off, also hide its shower
+    if (key === 'mbath')  activeDims.delete('mbShower');
+    if (key === 'bath2')  activeDims.delete('bath2Shower');
+    if (key === 'bath3')  activeDims.delete('bath3Shower');
+    if (key === 'bath4')  activeDims.delete('bath4Shower');
   } else {
     activeDims.add(key);
-    if (key === 'mbShower') activeDims.add('mbath');
+    // when a shower is toggled on, ensure its parent bath is on too
+    if (key === 'mbShower')    activeDims.add('mbath');
     if (key === 'bath2Shower') activeDims.add('bath2');
+    if (key === 'bath3Shower') activeDims.add('bath3');
+    if (key === 'bath4Shower') activeDims.add('bath4');
   }
   renderToggles(); renderTable();
 }
@@ -322,7 +336,7 @@ function renderTable() {
 
   document.getElementById('tbody').innerHTML = rows.map(d => {
     const cells = rl.map(r => {
-      if (r.minBaths > 0 && d.baths < r.minBaths)
+      if ((r.minBeds > 0 && d.rooms < r.minBeds) || (r.minBaths > 0 && d.baths < r.minBaths))
         return `<td class="${r.isSub?'sub-td':''}"><span class="dim">—</span></td>`;
       const val = d[r.key], s = sqm(val), m = ms(val);
       if (!s) return `<td class="${r.isSub?'sub-td':''}"><span class="dim">—</span></td>`;
@@ -331,13 +345,45 @@ function renderTable() {
       return `<td class="${r.isSub?'sub-td':''}"><span class="${cls}">${m}</span><br><span class="dim">${s} m²</span></td>`;
     }).join('');
 
-    const slots = buildPlanSlots(d.rooms, d.baths);
-    const btns = slots.map(s =>
-      `<button class="plan-btn" onclick="openModal('${d.project}','${d.type}','${s.key}')">${s.label} ↗</button>`
-    ).join('');
+    // Map dim toggle keys to plan slot keys — buttons mirror active area toggles
+    const DIM_TO_PLAN = {
+      mb:          'planBed1',
+      mbath:       'planBath1',
+      mbShower:    'planShower1',
+      bed2:        'planBed2',
+      bath2:       'planBath2',
+      bath2Shower: 'planShower2',
+      bed3:        'planBed3',
+      bath3:       'planBath3',
+      bath3Shower: 'planShower3',
+      bed4:        'planBed4',
+      bath4:       'planBath4',
+      bath4Shower: 'planShower4',
+      living:      'planLiving',
+      dining:      'planLiving',
+      kitchen:     'planKitchen',
+      balcony:     'planBalcony',
+    };
+    const allSlots = buildPlanSlots(d.rooms, d.baths);
+    // Collect plan slot keys matching active dim toggles
+    const activeSlotKeys = new Set(
+      [...activeDims].map(k => DIM_TO_PLAN[k]).filter(Boolean)
+    );
+    // Yard always travels with balcony
+    if (activeDims.has('balcony')) activeSlotKeys.add('planYard');
+
+    const btns = allSlots
+      .filter(s => activeSlotKeys.has(s.key))
+      .map(s => `<button class="plan-btn" onclick="openModal('${d.project}','${d.type}','${s.key}')">${s.label} ↗</button>`)
+      .join('');
 
     return `<tr>
-      <td class="frz">${d.project}</td>
+      <td class="frz">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span>${d.project}</span>
+          ${d.badge ? `<span class="vp">${d.badge}</span>` : ''}
+        </div>
+      </td>
       <td>
         <div class="type-wrap">
           <div class="type-top">
@@ -345,7 +391,6 @@ function renderTable() {
             <span style="font-weight:500">${d.type}</span>
             <span class="sqft-badge">${d.sqft}</span>
           </div>
-          ${d.badge ? `<span class="vp">${d.badge}</span>` : ''}
         </div>
       </td>
       <td><div class="rb"><b>${d.rooms}</b><span class="dim">bed</span><span class="rb-sep">·</span><b>${d.baths}</b><span class="dim">bath</span></div></td>

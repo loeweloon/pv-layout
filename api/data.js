@@ -2,7 +2,7 @@
 // Node.js 18+ — fetch is built-in, no extra packages needed
 // Required env var: NOTION_TOKEN (set in Vercel project settings)
 
-const DB_ID = 'eeb44e71b1e6489481ad6a813c5833e0';
+const DB_ID = '2e685d29c3de4011a02aa9916aaf685d';
 const NOTION_API = 'https://api.notion.com/v1';
 
 function getHeaders() {
